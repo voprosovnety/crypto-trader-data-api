@@ -12,4 +12,4 @@ class Token(Base):
     symbol = Column(String, nullable=False, unique=True)
     price = Column(Float, nullable=False)
 
-    history=relationship("PriceHistory", back_populates="token", cascade="all, delete-orphan")
+    history = relationship("PriceHistory", back_populates="token", cascade="all, delete-orphan")

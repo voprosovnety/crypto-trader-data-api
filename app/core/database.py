@@ -19,6 +19,7 @@ class Base(DeclarativeBase):
 from app.models.token import Token
 from app.models.price_history import PriceHistory
 
+
 async def get_db():
     async with async_session() as session:
         yield session

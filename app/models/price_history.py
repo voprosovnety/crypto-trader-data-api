@@ -13,4 +13,3 @@ class PriceHistory(Base):
     timestamp = Column(DateTime, server_default=func.now())
 
     token = relationship("Token", back_populates="history")
-
