@@ -8,10 +8,10 @@ from app.services.token_service import (
     get_tokens,
     get_token_by_symbol,
     update_token_price,
-    delete_token
+    delete_token, get_token_price_history
 )
 from app.services.price_service import get_crypto_price
-from app.schemas.token import TokenCreate, TokenResponse
+from app.schemas.token import TokenCreate, TokenResponse, PriceHistoryResponse
 
 router = APIRouter()
 
@@ -60,3 +60,7 @@ async def get_price(symbol: str):
         raise HTTPException(status_code=404, detail="Price not found")
     return {"symbol": symbol, "price:": price}
 
+
+@router.get("/tokens/{symbol}/history", response_model=List[PriceHistoryResponse])
+async def get_token_history(symbol: str, db: AsyncSession = Depends(get_db)):
+    return await get_token_price_history(db, symbol)

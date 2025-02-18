@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -18,3 +20,10 @@ class TokenResponse(TokenBase):
         from_attributes = True
 
 
+class PriceHistoryResponse(BaseModel):
+    token_symbol: str
+    price: float
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True

@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+from app.models.price_history import PriceHistory
 from app.models.token import Token
 
 
@@ -24,8 +25,10 @@ async def get_token_by_symbol(db: AsyncSession, symbol: str):
 
 async def update_token_price(db: AsyncSession, symbol: str, new_price: float):
     token = await get_token_by_symbol(db, symbol)
-    if token:
+    if token and token.price != new_price:
         token.price = new_price
+        price_history = PriceHistory(token_symbol=symbol, price=new_price)
+        db.add(price_history)
         await db.commit()
         await db.refresh(token)
     return token
@@ -39,3 +42,6 @@ async def delete_token(db: AsyncSession, symbol: str):
     return token
 
 
+async def get_token_price_history(db: AsyncSession, symbol: str):
+    result = await db.execute(select(PriceHistory).where(PriceHistory.token_symbol == symbol))
+    return result.scalars().all()
