@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.api.token_routes import router as token_router
 from app.core.config import settings
-from app.core.database import get_db
+from app.core.database import get_db, async_session
 from app.services.price_service import get_crypto_prices
 from app.services.token_service import get_tokens, update_token_price, initialize_tokens
 
@@ -29,7 +29,7 @@ app.include_router(token_router, prefix="/api")
 
 async def update_prices_loop():
     while True:
-        async for db in get_db():
+        async with async_session() as db:
             tokens = await get_tokens(db)
             if not tokens:
                 print("No tokens found in the database!")
