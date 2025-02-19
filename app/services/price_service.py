@@ -32,19 +32,50 @@ async def get_top_tokens():
         return None
 
 
-async def get_crypto_prices(symbols: list[str]) -> dict[str, float]:
-    url = f"{COINGECKO_API_URL}/simple/price"
-    ids = ",".join(symbol.lower() for symbol in symbols)
+async def get_token_ids(symbols: list[str]) -> dict[str, str]:
+    url = f"{COINGECKO_API_URL}/coins/list"
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(url, params={"ids": ids, "vs_currencies": "usd"})
+        response = await client.get(url)
         if response.status_code != 200:
             print(f"API Error: {response.status_code} - {response.text}")
             return {}
 
         data = response.json()
-    prices = {symbol.upper(): data.get(symbol.lower(), {}).get("usd") for symbol in symbols}
-    return {symbol: price for symbol, price in prices.items() if price is not None}
+
+    symbol_map = {token["symbol"].lower(): token["id"] for token in data}
+
+    return {symbol: symbol_map[symbol.lower()] for symbol in symbols if symbol.lower() in symbol_map}
+
+
+async def get_crypto_prices(symbols: list[str]) -> dict[str, float]:
+    symbol_to_id = await get_token_ids(symbols)
+    token_ids = [symbol_to_id[symbol] for symbol in symbols if symbol in symbol_to_id]
+
+    if not token_ids:
+        print(f"No valid CoinGecko IDs for tokens: {symbols}")
+        return {}
+
+    url = f"{COINGECKO_API_URL}/simple/price"
+    params = {
+        "vs_currencies": "usd",
+        "ids": ",".join(token_ids)
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, params=params)
+
+        try:
+            data = response.json()
+        except Exception as e:
+            print(f"Failed to parse JSON response: {e}")
+            return {}
+
+        if not isinstance(data, dict):
+            print(f"Unexpected response format: {data}")
+            return {}
+
+    return {symbol: data.get(symbol_to_id[symbol], {}).get("usd") for symbol in symbols if symbol in symbol_to_id}
 
 
 async def save_price_history(db: AsyncSession, token_symbol: str, price: float):

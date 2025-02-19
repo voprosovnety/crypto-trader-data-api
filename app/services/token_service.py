@@ -25,6 +25,10 @@ async def initialize_tokens(db: AsyncSession):
 
     prices = await get_crypto_prices(new_symbols)
 
+    missing_prices = [symbol for symbol in new_symbols if symbol not in prices or prices[symbol] is None]
+    if missing_prices:
+        print(f"Missing prices for tokens: {missing_prices}")
+
     new_tokens = [
         Token(name=token["name"], symbol=token["symbol"].upper(), price=prices.get(token["symbol"].upper(), 0))
         for token in top_tokens
