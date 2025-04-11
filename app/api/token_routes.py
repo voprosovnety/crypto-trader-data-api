@@ -10,7 +10,7 @@ from app.services.token_service import (
     update_token_price,
     delete_token
 )
-from app.services.price_service import get_crypto_prices, get_token_price_history
+from app.services.price_service import get_token_price_history, safe_get_crypto_prices
 from app.schemas.token import TokenCreate, TokenResponse, PriceHistoryResponse
 
 router = APIRouter()
@@ -53,13 +53,13 @@ async def delete_token_endpoint(symbol: str, db: AsyncSession = Depends(get_db))
 
 @router.get("/tokens/{symbol}/price")
 async def get_price(symbol: str):
-    prices = await get_crypto_prices([symbol])
+    prices = await safe_get_crypto_prices([symbol])
     price = prices.get(symbol.upper())
 
     if price is None:
         raise HTTPException(status_code=404, detail="Price not found")
 
-    return {"symbol": symbol, "price:": price}
+    return {"symbol": symbol, "price": price}
 
 
 @router.get("/tokens/{symbol}/history", response_model=List[PriceHistoryResponse])

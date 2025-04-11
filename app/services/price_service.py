@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime, timezone
 
 import httpx
+from httpx import HTTPStatusError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -22,7 +23,6 @@ async def get_top_tokens():
     }
 
     async with httpx.AsyncClient() as client:
-        await asyncio.sleep(2)
         response = await client.get(url, params=params)
         if response.status_code == 200:
             data = response.json()
@@ -82,6 +82,25 @@ async def get_crypto_prices(symbols: list[str]) -> dict[str, float]:
     prices = {symbol: data.get(symbol_to_id[symbol], {}).get("usd") for symbol in symbols if symbol in symbol_to_id}
     print(f"Parsed prices: {prices}")
     return prices
+
+
+async def safe_get_crypto_prices(symbols: list[str], retries: int = 3, delay: float = 5.0) -> dict[str, float]:
+    for attempt in range(1, retries + 1):
+        try:
+            return await get_crypto_prices(symbols)
+        except HTTPStatusError as e:
+            if e.response.status_code == 429:
+                retry_after = int(e.response.headers.get("Retry-After", delay))
+                print(f"[{attempt}] Rate limit hit. Sleeping for {retry_after}s...")
+                await asyncio.sleep(retry_after)
+            else:
+                print(f"[{attempt}] HTTP error {e.response.status_code}: {e.response.text}")
+                break
+        except Exception as e:
+            print(f"[{attempt}] Unexpected error: {e}")
+            await asyncio.sleep(delay * attempt)
+    print("Failed to fetch crypto prices after retries.")
+    return {}
 
 
 async def save_price_history(db: AsyncSession, token_symbol: str, price: float):

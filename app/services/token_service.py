@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.models.token import Token
-from app.services.price_service import save_price_history, get_top_tokens, get_crypto_prices
+from app.services.price_service import save_price_history, get_top_tokens, safe_get_crypto_prices
 
 
 async def initialize_tokens(db: AsyncSession):
@@ -23,7 +23,7 @@ async def initialize_tokens(db: AsyncSession):
         print("No new tokens to add.")
         return
 
-    prices = await get_crypto_prices(new_symbols)
+    prices = await safe_get_crypto_prices(new_symbols)
 
     missing_prices = [symbol for symbol in new_symbols if symbol not in prices or prices[symbol] is None]
     if missing_prices:
