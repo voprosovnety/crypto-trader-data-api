@@ -21,5 +21,8 @@ from app.models.price_history import PriceHistory
 
 
 async def get_db():
-    async with async_session() as session:
+    session: AsyncSession = async_session()
+    try:
         yield session
+    finally:
+        await session.close()

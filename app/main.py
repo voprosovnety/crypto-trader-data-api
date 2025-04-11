@@ -29,7 +29,14 @@ app.include_router(token_router, prefix="/api")
 
 async def update_prices_loop():
     while True:
-        async with async_session() as db:
+        print("Running update_prices_loop")
+
+        db = None
+        try:
+            async for session in get_db():
+                db = session
+                break
+
             tokens = await get_tokens(db)
             if not tokens:
                 print("No tokens found in the database!")
@@ -38,6 +45,7 @@ async def update_prices_loop():
 
             symbols = [token.symbol for token in tokens]
             prices = await get_crypto_prices(symbols)
+            print(f"Prices fetched: {prices}")
 
             for token in tokens:
                 new_price = prices.get(token.symbol)
@@ -46,6 +54,9 @@ async def update_prices_loop():
                     print(f"Updated {token.symbol}: {new_price}")
                 else:
                     print(f"Failed to get price for {token.symbol}")
+        except Exception as e:
+            print(f"Error in update_prices_loop: {e}")
+
         await asyncio.sleep(60)
 
 

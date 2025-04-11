@@ -33,19 +33,26 @@ async def get_top_tokens():
 
 
 async def get_token_ids(symbols: list[str]) -> dict[str, str]:
-    url = f"{COINGECKO_API_URL}/coins/list"
+    url = f"{COINGECKO_API_URL}/coins/markets"
+    params = {
+        "vs_currency": "usd",
+        "order": "market_cap_desc",
+        "per_page": 250,
+        "page": 1
+    }
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(url)
+        response = await client.get(url, params=params)
         if response.status_code != 200:
             print(f"API Error: {response.status_code} - {response.text}")
             return {}
 
         data = response.json()
 
-    symbol_map = {token["symbol"].lower(): token["id"] for token in data}
+    symbol_to_id = {token["symbol"].upper(): token["id"] for token in data}
 
-    return {symbol: symbol_map[symbol.lower()] for symbol in symbols if symbol.lower() in symbol_map}
+    print(f"Token mapping: {symbol_to_id}")
+    return symbol_to_id
 
 
 async def get_crypto_prices(symbols: list[str]) -> dict[str, float]:
@@ -67,19 +74,19 @@ async def get_crypto_prices(symbols: list[str]) -> dict[str, float]:
 
         try:
             data = response.json()
+            print(f"Raw API response: {data}")
         except Exception as e:
             print(f"Failed to parse JSON response: {e}")
             return {}
 
-        if not isinstance(data, dict):
-            print(f"Unexpected response format: {data}")
-            return {}
-
-    return {symbol: data.get(symbol_to_id[symbol], {}).get("usd") for symbol in symbols if symbol in symbol_to_id}
+    prices = {symbol: data.get(symbol_to_id[symbol], {}).get("usd") for symbol in symbols if symbol in symbol_to_id}
+    print(f"Parsed prices: {prices}")
+    return prices
 
 
 async def save_price_history(db: AsyncSession, token_symbol: str, price: float):
-    price_record = PriceHistory(token_symbol=token_symbol, price=price, timestamp=datetime.now(timezone.utc))
+    timestamp = datetime.now(timezone.utc).replace(tzinfo=None)
+    price_record = PriceHistory(token_symbol=token_symbol, price=price, timestamp=timestamp)
     db.add(price_record)
     await db.commit()
 
