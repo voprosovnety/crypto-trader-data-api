@@ -6,7 +6,6 @@ from app.services.price_service import save_price_history, get_top_tokens, safe_
 
 
 async def initialize_tokens(db: AsyncSession):
-    """Добавляет топ-50 криптовалют в БД, если их там нет."""
     print("Initializing tokens...")
 
     top_tokens = await get_top_tokens()

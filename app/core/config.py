@@ -11,7 +11,7 @@ class Settings:
     DATABASE_URL_SYNC: str = os.getenv("DATABASE_URL_SYNC")
 
     if not DATABASE_URL or not DATABASE_URL_SYNC:
-        raise ValueError("Один из DATABASE_URL не найден в .env")
+        raise ValueError("One of DATABASE_URL not found in .env")
 
 
 settings = Settings()
